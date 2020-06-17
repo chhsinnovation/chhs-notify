@@ -15,7 +15,7 @@ You'll need to prepare a few things in AWS, outside of the Serverless stack, to 
 * Various secrets need to be stored within System Manager Parameter Store. See entries with the `${ssm: ... }` prefix in `serverless.yml` for more info.
 * You'll need valid SSL certificates loaded into Certificate Manager to use the custom domain stuff. 
 
-# Getting started.
+# Getting started
 
 First, you'll need to install the app's dependencies.
 
