@@ -1,0 +1,14 @@
+{
+  "MessageResponse": {
+    "ApplicationId": "28b7f74508c04519979ce7159954f4e1",
+    "RequestId": "e66b4d27-6f68-4d11-a532-25388a1418e4",
+    "Result": {
+      "15105655757": {
+        "DeliveryStatus": "SUCCESSFUL",
+        "MessageId": "h6o0d3sqp3n5q4lkoenlbg2ejm7nvobv5dmvf2g0",
+        "StatusCode": 200,
+        "StatusMessage": "MessageId: h6osqp0d3sqp3n5q4lkoenlbg2ejm7nvobv5dmvf2g0"
+      }
+    }
+  }
+}

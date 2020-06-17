@@ -1,0 +1,261 @@
+service: NotifyAPI
+
+plugins:
+  - serverless-pseudo-parameters # Use nice pseudo-params instead of 'Fn::' everywhere
+  - serverless-offline # Test functions locally
+  - serverless-domain-manager # Manage domain names
+
+package:
+  exclude:
+    - mocks/**
+    - tests/**
+    - resources/**
+    - db/**
+
+provider:
+  name: aws
+  runtime: nodejs10.x
+  stage: dev
+  region: us-west-2
+  timeout: 30 # High timeout to accomodate RDS cold starts.
+  apiKeys:
+    - "TestKey-${self:custom.stage}"
+    - "Slalom-${self:custom.stage}"
+
+  environment:
+    STAGE: "${self:custom.stage}"
+    SQS_SMS_URL: "#{SMSQueue}"
+    SQS_MESSAGE_URL: "#{MessageQueue}"
+    S3_BATCH_FILES_BUCKET: "${self:custom.s3.batchFile.bucket}"
+    RDS_ACCESS_ARN: "${self:custom.db.${self:custom.stage}.credentials}"
+    RDS_INSTANCE_ARN: "${self:custom.db.${self:custom.stage}.instance}"
+    RDS_DATABASE_NAME: "${self:custom.db.name}"
+    RDS_MESSAGES_INSTANCE_ARN: "${self:custom.db.prod.instance}"
+    RDS_MESSAGES_ACCESS_ARN: "${self:custom.db.prod.credentials}"
+    SHORTURL_API_KEY: "${self:custom.shortUrl.${self:custom.stage}.key}"
+    SHORTURL_API_ENDPOINT: "${self:custom.shortUrl.${self:custom.stage}.endpoint}"
+    URL_BASE: "${self:custom.url.base}"
+
+  iamRoleStatements:
+    # Allow access to list of items in a bucket.
+    - Effect: "Allow"
+      Action:
+        - "s3:ListBucket"
+      Resource: 
+        - "arn:aws:s3:::${self:custom.s3.batchFile.bucket}"
+    # Allow access to get and put new files into a bucket.
+    - Effect: "Allow"
+      Action:
+        - "s3:PutObject"
+        - "s3:GetObject"
+      Resource:
+        - "arn:aws:s3:::${self:custom.s3.batchFile.bucket}/*"
+    # Allow access to validate phone numbers in Pinpoint.
+    - Effect: "Allow"
+      Action:
+        - "mobiletargeting:PhoneNumberValidate"
+      Resource: "arn:aws:mobiletargeting:#{AWS::Region}:#{AWS::AccountId}:phone/number/validate"
+    # Allow access to submit into our generated SQS queues.
+    - Effect: "Allow"
+      Action:
+        - "sqs:SendMessage"
+      Resource: 
+        - "#{SMSQueue.Arn}"
+        - "#{MessageQueue.Arn}"
+    # Deny publishing to an SNS topic at this time.
+    - Effect: "Deny"
+      Action:
+        - "sns:Publish"
+      Resource: "arn:aws:sns:*:*:*"
+    # But still allow direct SMS texting.
+    - Effect: "Allow"
+      Action:
+        - "sns:Publish"
+        - "sns:SetSMSAttributes"
+        - "sns:CheckIfPhoneNumberIsOptedOut"
+      Resource: "*"
+    # Allow access to RDS Data API.
+    - Effect: "Allow"
+      Action: 
+        - "rds-data:BatchExecuteStatement"
+        - "rds-data:BeginTransaction"
+        - "rds-data:CommitTransaction"
+        - "rds-data:ExecuteStatement"
+        - "rds-data:RollbackTransaction"
+      Resource: "*"
+    # Let the app get access credentials to the RDS database.
+    - Effect: "Allow"
+      Action:
+        - "secretsmanager:GetSecretValue"
+      Resource: "arn:aws:secretsmanager:#{AWS::Region}:#{AWS::AccountId}:secret:*"
+
+functions:
+  smsCreate:
+    handler: concerns/sms/sms-handler.post
+    events:
+      - http:
+          method: post
+          path: "/v0/sms" 
+          cors: true
+          private: true
+  smsGet:
+    handler: concerns/sms/sms-handler.get
+    events:
+      - http:
+          method: get
+          path: "/v0/sms/{id}"
+          cors: true
+          private: true
+          parameters: 
+             paths: 
+               id: true
+  smsProcessQueue:
+    handler: concerns/sms/sms-handler.processQueue
+    events:
+      - sqs:
+          arn: "#{SMSQueue.Arn}"
+  messageProcessQueue:
+    handler: concerns/message/message-handler.processQueue
+    events:
+      - sqs:
+          arn: "#{MessageQueue.Arn}"
+  batchesPost:
+    handler: concerns/batch/batch-handler.create
+    events:
+      - http:
+          method: post
+          path: "/v0/batches" 
+          cors: true
+          private: true
+  batchesGet:
+    handler: concerns/batch/batch-handler.get
+    events:
+      - http:
+          method: get
+          path: "/v0/batches/{id}"
+          cors: true
+          private: true
+          parameters:
+            querystrings:
+              page: true
+            paths: 
+              id: true
+  batchesProcessFile:
+    handler: concerns/batch/batch-handler.processFile
+    events:
+      - s3:
+          bucket: "${self:custom.s3.batchFile.bucket}"
+          event: "s3:ObjectCreated:*"
+          rules:
+            - suffix: ".json"
+  templatesList:
+    handler: concerns/template/template-handler.list
+    events:
+      - http:
+          method: get
+          path: "/v0/templates/"
+          cors: true
+          private: true
+  templatesPost:
+    handler: concerns/template/template-handler.post
+    events:
+      - http:
+          method: post
+          path: "/v0/templates/"
+          cors: true
+          private: true
+  templatesGet:
+    handler: concerns/template/template-handler.get
+    events:
+      - http:
+          method: get
+          path: "/v0/templates/{id}"
+          cors: true
+          private: true
+          parameters: 
+            paths: 
+              id: true
+  templatesPut:
+    handler: concerns/template/template-handler.put
+    events:
+      - http:
+          method: put
+          path: "/v0/templates/{id}"
+          cors: true
+          private: true
+          parameters: 
+            paths: 
+              id: true
+  templatesDelete:
+    handler: concerns/template/template-handler.del
+    events:
+      - http:
+          method: delete
+          path: "/v0/templates/{id}"
+          cors: true
+          private: true
+          parameters: 
+            paths: 
+              id: true
+  templatesRender:
+    handler: concerns/template/template-handler.render
+    events:
+      - http:
+          method: post
+          path: "/v0/templates/{id}"
+          cors: true
+          private: true
+          parameters: 
+            paths: 
+              id: true
+
+custom: 
+  stage: ${opt:stage, self:provider.stage}
+  s3:
+    batchFile:
+      bucket: "notifyapi-${self:custom.stage}-batchfile"
+  shortUrl:
+    dev:
+      key: ${ssm:/shortUrl/dev/api/key~true}
+      endpoint: "https://dev.api.u.chhs.ca.gov"
+    test:
+      key: ${ssm:/shortUrl/prod/api/key~true}
+      endpoint: "https://api.u.chhs.ca.gov"
+    prod:
+      key: ${ssm:/shortUrl/prod/api/key~true}
+      endpoint: "https://api.u.chhs.ca.gov"
+  db:
+    name: "notify_${self:custom.stage}"
+    dev:
+      credentials: ${ssm:/notify/db/credentials/arn~true}
+      instance: ${ssm:/notify/db/instance/arn~true}
+    test:
+      credentials: ${ssm:/notify/db/credentials/arn~true}
+      instance: ${ssm:/notify/db/instance/arn~true}
+    staging:
+      credentials: ${ssm:/notify/db/credentials/arn~true}
+      instance: ${ssm:/notify/db/instance/arn~true}
+    prod:
+      credentials: ${ssm:/notify/db/prod/credentials/arn~true}
+      instance: ${ssm:/notify/db/prod/instance/arn~true}
+  url:
+    base: "https://${self:custom.domain.${self:custom.stage}}/v0"
+  domain:
+    base: "api.notify.chhs.ca.gov"
+    dev: "dev.${self:custom.domain.base}"
+    test: "test.${self:custom.domain.base}"
+    staging: "staging.${self:custom.domain.base}"
+    prod: "${self:custom.domain.base}"
+  customDomain:
+    domainName: "${self:custom.domain.${self:custom.stage}}"
+    basePath: ''
+    stage: ${self:custom.stage}
+    createRoute53Record: true
+
+resources:
+  - ${file(resources/api-gateway-errors.yml)}
+  # Cognito
+  # - ${file(resources/cognito-user-pool.yml)}
+  # - ${file(resources/cognito-identity-pool.yml)}
+  - ${file(resources/sqs.yml)}
+  # - ${file(resources/s3.yml)}

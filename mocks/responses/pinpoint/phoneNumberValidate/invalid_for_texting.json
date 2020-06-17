@@ -1,0 +1,13 @@
+{
+  "NumberValidateResponse": {
+    "CleansedPhoneNumberE164": "+18992223332",
+    "CleansedPhoneNumberNational": "8992223332",
+    "Country": "United States",
+    "CountryCodeIso2": "US",
+    "CountryCodeNumeric": "1",
+    "OriginalCountryCodeIso2": "US",
+    "OriginalPhoneNumber": "+18992223332",
+    "PhoneType": "INVALID",
+    "PhoneTypeCode": 3
+  }
+}

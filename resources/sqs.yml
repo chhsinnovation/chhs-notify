@@ -1,0 +1,11 @@
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-sqs-queues.html
+
+Resources:
+  SMSQueue:
+    Type: "AWS::SQS::Queue"
+    Properties:
+      QueueName: "${self:service}-${self:custom.stage}-SMSQueue"
+  MessageQueue:
+    Type: "AWS::SQS::Queue"
+    Properties:
+      QueueName: "${self:service}-${self:custom.stage}-MessageQueue"

@@ -1,0 +1,22 @@
+{
+  "name": "chhs-notify",
+  "version": "1.1.0",
+  "description": "Text messaging service for CHHS apps.",
+  "author": "CHHS",
+  "license": "MIT",
+  "devDependencies": {
+    "aws-sdk": "^2.656.0",
+    "jest": "^25.3.0",
+    "serverless": "^1.67.3",
+    "serverless-domain-manager": "^3.3.2",
+    "serverless-dotenv-plugin": "^2.1.1",
+    "serverless-offline": "^5.12.1",
+    "serverless-pseudo-parameters": "^2.5.0",
+    "sinon": "^9.0.2"
+  },
+  "dependencies": {
+    "ajv": "^6.12.2",
+    "axios": "^0.19.2",
+    "liquidjs": "^9.11.11"
+  }
+}

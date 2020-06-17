@@ -1,0 +1,17 @@
+{
+  "NumberValidateResponse": {
+    "Carrier": "T-Mobile USA, Inc.",
+    "City": "Fremont",
+    "CleansedPhoneNumberE164": "+15105655757",
+    "CleansedPhoneNumberNational": "5105655757",
+    "Country": "United States",
+    "CountryCodeIso2": "US",
+    "CountryCodeNumeric": "1",
+    "OriginalCountryCodeIso2": "US",
+    "OriginalPhoneNumber": "+15105655757",
+    "PhoneType": "MOBILE",
+    "PhoneTypeCode": 0,
+    "Timezone": "America/Los_Angeles",
+    "ZipCode": "94536"
+  }
+}
