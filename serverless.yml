@@ -20,7 +20,6 @@ provider:
   timeout: 30 # High timeout to accomodate RDS cold starts.
   apiKeys:
     - "TestKey-${self:custom.stage}"
-    - "Slalom-${self:custom.stage}"
 
   environment:
     STAGE: "${self:custom.stage}"
